@@ -17,6 +17,8 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.Objects;
+
 public class TimebombListener implements Listener {
 
     private final Timebomb plugin;
@@ -24,8 +26,9 @@ public class TimebombListener implements Listener {
     public TimebombListener(Timebomb plugin) {
         this.plugin = plugin;
     }
+
     @EventHandler
-    public void onInteract(PlayerDeathEvent event) {
+    public void onPlayerDeath(PlayerDeathEvent event) {
 
         final Player player = event.getEntity();
         final Location loc = player.getLocation().clone();
@@ -33,14 +36,13 @@ public class TimebombListener implements Listener {
 
         block = block.getRelative(BlockFace.DOWN);
         block.setType(Material.CHEST);
-
         BlockData leftData = block.getBlockData();
         ((Directional) leftData).setFacing(BlockFace.NORTH);
         block.setBlockData(leftData);
         Chest chestDataLeft = (Chest) leftData;
         chestDataLeft.setType(Chest.Type.RIGHT);
         block.setBlockData(chestDataLeft);
-        org.bukkit.block.Chest chest = (org.bukkit.block.Chest) block.getState();
+
         block = block.getRelative(BlockFace.WEST);
         block.setType(Material.CHEST);
         BlockData rightData = block.getBlockData();
@@ -50,14 +52,13 @@ public class TimebombListener implements Listener {
         chestDataRight.setType(Chest.Type.LEFT);
         block.setBlockData(chestDataRight);
 
+        org.bukkit.block.Chest chest = (org.bukkit.block.Chest) block.getState();
 
-        for (ItemStack item : event.getDrops()) {
-            if (item == null || item.getType() == Material.AIR)
-                continue;
+
+        for (ItemStack item : event.getDrops())
             chest.getInventory().addItem(item);
-        }
         event.getDrops().clear();
-        final ArmorStand stand = player.getWorld().spawn(chest.getLocation().clone().add(0, 1.0, 0), ArmorStand.class);
+        final ArmorStand stand = player.getWorld().spawn(chest.getLocation().clone().add(0+1, 1.0, 0+0.5), ArmorStand.class);
         stand.setCustomNameVisible(true);
         stand.setSmall(true);
         stand.setGravity(false);
@@ -73,7 +74,7 @@ public class TimebombListener implements Listener {
                 if (time == 0) {
                     Bukkit.broadcastMessage("§aLe corps de §6" + player.getName() + "§5 a explosé !");
                     loc.getBlock().setType(Material.AIR);
-                    loc.getWorld().createExplosion(loc.getBlockX() + 0.5, loc.getBlockY() + 0.5, loc.getBlockZ() + 0.5, 5, false, true);
+                    Objects.requireNonNull(loc.getWorld()).createExplosion(loc.getBlockX() + 0.5, loc.getBlockY() + 0.5, loc.getBlockZ() + 0.5, 5, false, true);
                     loc.getWorld().strikeLightning(loc);
                     stand.remove();
                     cancel();
@@ -98,9 +99,9 @@ public class TimebombListener implements Listener {
                     for (Player p : Bukkit.getOnlinePlayers())
                         p.playSound(chest.getLocation(), Sound.BLOCK_NOTE_BLOCK_FLUTE, 1, 0);
                 }
-                else
+                else {
                     stand.setCustomName("§a" + time + "s");
+                }
             }
         }.runTaskTimer(plugin, 0, 20);
     }
-}
